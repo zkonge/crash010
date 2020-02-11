@@ -1,0 +1,71 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  build:
+    name: Upload Release Asset
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: -Zforce-overflow-checks=no
+        with:
+          command: test
+          args: --all-features
+
+      - name: Pack (Windows)
+        run: zip --junk-paths crash010-${{ runner.os }}.zip target/release/crash010.exe
+        if: runner.os == 'Windows'
+
+      - name: Pack (Linux/MacOS)
+        run: cd release/ && tar -zcvf ../crash010-${{ runner.os }}.tar.gz crash010 && cd -
+        if: runner.os != 'Windows'
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset (Windows)
+        id: upload_release_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./crash010-${{ runner.os }}.zip
+          asset_name: crash010-${{ runner.os }}.zip
+          asset_content_type: application/zip
+        if: runner.os == 'Windows'
+
+      - name: Upload Release Asset (Linux/MacOS)
+        id: upload_release_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./crash010-${{ runner.os }}.tar.gz
+          asset_name: crash010-${{ runner.os }}.tar.gz
+          asset_content_type: application/gzip
+        if: runner.os != 'Windows'

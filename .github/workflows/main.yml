@@ -8,7 +8,7 @@ jobs:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
     name: Rust project
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@master
 
@@ -18,7 +18,7 @@ jobs:
             toolchain: nightly
             override: true
 
-      - name: Testing
+      - name: Test
         uses: actions-rs/cargo@v1
         env:
           RUSTFLAGS: -Zforce-overflow-checks=no
