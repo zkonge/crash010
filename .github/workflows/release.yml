@@ -32,7 +32,7 @@ jobs:
         if: runner.os == 'Windows'
 
       - name: Pack (Linux/MacOS)
-        run: cd release/ && tar -zcvf ../crash010-${{ runner.os }}.tar.gz crash010 && cd -
+        run: cd target/release/ && tar -zcvf ../../crash010-${{ runner.os }}.tar.gz crash010 && cd -
         if: runner.os != 'Windows'
 
       - name: Create Release
