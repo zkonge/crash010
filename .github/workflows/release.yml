@@ -24,15 +24,15 @@ jobs:
         env:
           RUSTFLAGS: -Zforce-overflow-checks=no
         with:
-          command: test
-          args: --all-features
+          command: build
+          args: --release --all-features
 
       - name: Pack (Windows)
-        run: dir && zip --junk-paths crash010-${{ runner.os }}.zip target/release/crash010.exe
+        run: zip --junk-paths crash010-${{ runner.os }}.zip target/release/crash010.exe
         if: runner.os == 'Windows'
 
       - name: Pack (Linux/MacOS)
-        run: ls && cd target/release/ && tar -zcvf ../../crash010-${{ runner.os }}.tar.gz crash010 && cd -
+        run: cd target/release/ && tar -zcvf ../../crash010-${{ runner.os }}.tar.gz crash010 && cd -
         if: runner.os != 'Windows'
 
       - name: Create Release
