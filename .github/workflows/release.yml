@@ -6,57 +6,23 @@ on:
       - 'v*'
 
 jobs:
-  windows_build:
-    name: Build (Windows)
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@master
-
-      - name: Install latest nightly
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-
-      - name: Build
-        uses: actions-rs/cargo@v1
-        env:
-          RUSTFLAGS: -Zforce-overflow-checks=no
-        with:
-          command: build
-          args: --release --all-features
-
-      - name: Pack
-        run: Compress-Archive target/release/crash010.exe crash010-${{ runner.os }}.zip
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./crash010-${{ runner.os }}.zip
-          asset_name: crash010-${{ runner.os }}.zip
-          asset_content_type: application/zip
-
-  unix_like_build:
-    name: Build (Unix like)
-    needs: windows_build
+  build:
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.platform }}
+        include:
+          - os: ubuntu-latest
+            artifact_name: crash010
+            asset_name: crash010-linux-amd64
+
+          - os: windows-latest
+            artifact_name: crash010.exe
+            asset_name: crash010-windows-amd64.exe
+
+          - os: macos-latest
+            artifact_name: crash010
+            asset_name: crash010-macos-amd64
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@master
 
@@ -72,17 +38,12 @@ jobs:
           RUSTFLAGS: -Zforce-overflow-checks=no
         with:
           command: build
-          args: --release --all-features
+          args: --release
 
-      - name: Pack
-        run: cd target/release/ && tar -zcvf ../../crash010-${{ runner.os }}.tar.gz crash010 && cd -
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload
+        uses: svenstaro/upload-release-action@v1-release
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./crash010-${{ runner.os }}.tar.gz
-          asset_name: crash010-${{ runner.os }}.tar.gz
-          asset_content_type: application/gzip
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/${{ matrix.artifact_name }}
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
