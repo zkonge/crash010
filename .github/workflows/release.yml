@@ -47,7 +47,6 @@ jobs:
           prerelease: false
 
       - name: Upload Release Asset (Windows)
-        id: upload_release_asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -59,7 +58,6 @@ jobs:
         if: runner.os == 'Windows'
 
       - name: Upload Release Asset (Linux/MacOS)
-        id: upload_release_asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
