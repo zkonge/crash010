@@ -5,7 +5,7 @@ use std::{
     thread,
 };
 
-use chrono::{Duration, TimeZone, Utc};
+use chrono::{Duration, NaiveDate};
 
 mod keygen;
 mod web;
@@ -23,7 +23,7 @@ fn main() {
         name = "user".into();
     }
 
-    let valid_until = Utc.ymd(2020, 12, 12) + Duration::days(3650);
+    let valid_until = NaiveDate::from_ymd_opt(2020, 12, 12).unwrap() + Duration::days(3650);
     let mut key = keygen::Password::new();
     key.generate_key(name.trim(), valid_until, 1).unwrap();
 

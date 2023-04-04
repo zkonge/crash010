@@ -1,6 +1,6 @@
 use std::fmt::{Display, Error, Formatter};
 
-use chrono::{Date, TimeZone, Utc};
+use chrono::NaiveDate;
 
 const TABLE: [u32; 256] = [
     0x39cb44b8, 0x23754f67, 0x5f017211, 0x3ebb24da, 0x351707c6, 0x63f9774b, 0x17827288, 0x0fe74821,
@@ -59,10 +59,10 @@ impl Password {
     pub fn generate_key(
         &mut self,
         username: &str,
-        valid_until: Date<Utc>,
+        valid_until: NaiveDate,
         license_count: u16,
     ) -> Result<(), ()> {
-        let begin_day = Utc.ymd(1970, 1, 1);
+        let begin_day = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
 
         let valid_duration = valid_until - begin_day;
         let valid_duration = valid_duration.num_days() as u32;
@@ -214,7 +214,7 @@ mod test {
     fn test_get_hash() {
         let mut password = Password::new();
         password
-            .generate_key("qaq", Utc.ymd(2050, 1, 1), 1)
+            .generate_key("qaq", NaiveDate::from_ymd_opt(2050, 1, 1).unwrap(), 1)
             .unwrap();
         assert_eq!(format!("{password}"), "49CB-07AC-966F-6E55-BCF3");
     }
