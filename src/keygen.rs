@@ -1,6 +1,6 @@
-use std::fmt::{Display, Formatter, Error};
-use chrono::{Utc, TimeZone, Date};
-use byteorder::{ByteOrder, LittleEndian};
+use std::fmt::{Display, Error, Formatter};
+
+use chrono::{Date, TimeZone, Utc};
 
 const TABLE: [u32; 256] = [
     0x39cb44b8, 0x23754f67, 0x5f017211, 0x3ebb24da, 0x351707c6, 0x63f9774b, 0x17827288, 0x0fe74821,
@@ -34,10 +34,11 @@ const TABLE: [u32; 256] = [
     0x7acf2704, 0x28896838, 0x18614677, 0x1bf569eb, 0x0ba85ec9, 0x6aca6b46, 0x1e43422a, 0x514d5f0e,
     0x413e018c, 0x307626e9, 0x01ed1dfa, 0x49f46f5a, 0x461b642b, 0x7d7007f2, 0x13652657, 0x6b160bc5,
     0x65e04849, 0x1f526e1c, 0x5a0251b6, 0x2bd73f69, 0x2dbf7acd, 0x51e63e80, 0x5cf2670f, 0x21cd0a03,
-    0x5cff0261, 0x33ae061e, 0x3bb6345f, 0x5d814a75, 0x257b5df4, 0x0a5c2c5b, 0x16a45527, 0x16f23945
+    0x5cff0261, 0x33ae061e, 0x3bb6345f, 0x5d814a75, 0x257b5df4, 0x0a5c2c5b, 0x16a45527, 0x16f23945,
 ];
 
 #[repr(packed(1))]
+#[derive(Clone, Copy)]
 struct PasswordStructure {
     _padding1: [u8; 3],
     algorithm: u8,
@@ -51,25 +52,27 @@ pub union Password {
 }
 
 impl Password {
-    pub fn new() -> Self { Self { data: [0u8; 10] } }
+    pub fn new() -> Self {
+        Self { data: [0u8; 10] }
+    }
 
-    pub fn generate_key(&mut self, username: &str, valid_until: Date<Utc>, license_count: u16) -> Result<(), ()> {
+    pub fn generate_key(
+        &mut self,
+        username: &str,
+        valid_until: Date<Utc>,
+        license_count: u16,
+    ) -> Result<(), ()> {
         let begin_day = Utc.ymd(1970, 1, 1);
 
         let valid_duration = valid_until - begin_day;
         let valid_duration = valid_duration.num_days() as u32;
 
-
-        unsafe {
-            self.password.checksum = Self::get_hash(username, true, valid_duration, license_count)?;
-        }
+        self.password.checksum = Self::get_hash(username, true, valid_duration, license_count)?;
 
         let valid_duration = Self::encode_expire_date(valid_duration, 0x5B8C27)?;
 
-
         //parse valid time
-        let mut encoded_valid_duration = [0u8; 4];
-        LittleEndian::write_u32(&mut encoded_valid_duration, valid_duration);
+        let encoded_valid_duration = valid_duration.to_le_bytes();
 
         unsafe {
             self.data[0] = encoded_valid_duration[0] ^ self.data[6];
@@ -80,17 +83,14 @@ impl Password {
         //parse license_count
         let license_count = Self::encode_license_count(license_count)?;
 
-        let mut encoded_license_count = [0u8; 2];
-        LittleEndian::write_u16(&mut encoded_license_count, license_count);
+        let encoded_license_count = license_count.to_le_bytes();
 
         unsafe {
             self.data[1] = encoded_license_count[1] ^ self.data[7];
             self.data[2] = encoded_license_count[0] ^ self.data[5];
         }
 
-        unsafe {
-            self.password.algorithm = 0xAC;
-        }
+        self.password.algorithm = 0xAC;
 
         Ok(())
     }
@@ -136,7 +136,12 @@ impl Password {
         Ok(ret)
     }
 
-    fn get_hash(username: &str, is_registration_version: bool, valid_duration: u32, license_count: u16) -> Result<u32, ()> {
+    fn get_hash(
+        username: &str,
+        is_registration_version: bool,
+        valid_duration: u32,
+        license_count: u16,
+    ) -> Result<u32, ()> {
         let mut result: u32 = 0;
         let mut vec0: u8 = (17 * valid_duration) as u8;
         let mut vec1: u8 = (15 * license_count) as u8;
@@ -171,8 +176,16 @@ impl Display for Password {
             write!(
                 f,
                 "{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}",
-                self.data[0], self.data[1], self.data[2], self.data[3], self.data[4],
-                self.data[5], self.data[6], self.data[7], self.data[8], self.data[9],
+                self.data[0],
+                self.data[1],
+                self.data[2],
+                self.data[3],
+                self.data[4],
+                self.data[5],
+                self.data[6],
+                self.data[7],
+                self.data[8],
+                self.data[9],
             )?;
         }
         Ok(())
@@ -200,7 +213,9 @@ mod test {
     #[test]
     fn test_get_hash() {
         let mut password = Password::new();
-        password.generate_key("qaq", Utc.ymd(2050, 1, 1), 1).unwrap();
-        assert_eq!(format!("{}", password), "49CB-07AC-966F-6E55-BCF3".to_owned());
+        password
+            .generate_key("qaq", Utc.ymd(2050, 1, 1), 1)
+            .unwrap();
+        assert_eq!(format!("{password}"), "49CB-07AC-966F-6E55-BCF3");
     }
 }

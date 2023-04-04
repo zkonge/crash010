@@ -2,11 +2,10 @@
 name = "crash010"
 version = "0.1.0"
 authors = ["zkonge"]
-edition = "2018"
+edition = "2021"
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 
 [profile.release]
 lto = true
-
-[dependencies]
-chrono = "0.4"
-byteorder = "1.3.4"

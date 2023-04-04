@@ -1,23 +1,19 @@
-#![feature(untagged_unions)]
+use std::{
+    io,
+    io::Write,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    thread,
+};
 
-use std::thread;
-use std::net::{SocketAddr, Ipv4Addr, IpAddr};
-use std::io;
+use chrono::{Duration, TimeZone, Utc};
 
-use chrono::{Utc, Duration, TimeZone};
-use std::io::Write;
-
-mod web;
 mod keygen;
+mod web;
 
 fn main() {
-    let web_thread = thread::spawn(
-        || {
-            web::create_server(
-                SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 80)
-            ).unwrap();
-        }
-    );
+    let web_thread = thread::spawn(|| {
+        web::create_server(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 80)).unwrap();
+    });
     print!("Input your name (default name: user):");
     io::stdout().flush().unwrap();
 
