@@ -36,7 +36,7 @@ jobs:
       - name: Build
         uses: actions-rs/cargo@v1
         env:
-          RUSTFLAGS: -Zforce-overflow-checks=no
+          RUSTFLAGS: -C overflow-checks=no
         with:
           command: build
           args: --release
