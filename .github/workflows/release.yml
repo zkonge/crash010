@@ -35,8 +35,6 @@ jobs:
 
       - name: Build
         uses: actions-rs/cargo@v1
-        env:
-          RUSTFLAGS: -C overflow-checks=no
         with:
           command: build
           args: --release
